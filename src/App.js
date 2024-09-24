@@ -1,23 +1,112 @@
-import logo from './logo.svg';
-import './App.css';
-
+import "./App.css";
+import { v4 as uuidv4 } from "uuid";
+import Header from "./components/Header";
+import AddContact from "./components/AddContact";
+import ContactList from "./components/ContactList";
+import { useEffect, useState } from "react";
+import { Route, Routes } from "react-router-dom";
+import ContactsDetail from "./components/ContactsDetail";
+import DeleteContact from "./components/DeleteContact";
+import DemoData from "./data/DemoData";
 function App() {
+  const key = "contacts";
+  const localData = JSON.parse(localStorage.getItem(key));
+  const [contacts, setContacts] = useState(localData ? localData : DemoData);
+  const [search, setSearch] = useState("");
+  const [searchResult, setSearchResult] = useState([]);
+
+  const handleAddContact = (newContact) => {
+    setContacts((prevContacts) => [
+      ...prevContacts,
+      {
+        id: uuidv4(),
+        ...newContact,
+        gender: newContact.gender,
+      },
+    ]);
+  };
+
+  const RemoveContact = (id) => {
+    const newContactList = contacts.filter((contact) => {
+      return contact.id !== id;
+    });
+    setContacts(newContactList);
+  };
+
+  const editContact = (editedContact) => {
+    const editedContactList = contacts.map((contact) => {
+      if (contact.id === editedContact.id) {
+        return {
+          // id: contact.id,
+          ...contact,
+          name: editedContact.name,
+          email: editedContact.email,
+          gender: editedContact.gender,
+        };
+      } else {
+        return contact;
+      }
+    });
+    setContacts(editedContactList);
+  };
+
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(contacts));
+  }, [contacts]);
+
+  const handleSearch = (search) => {
+    setSearch(search);
+    if (search !== "") {
+      const newSearchResult = contacts.filter((contact) => {
+        return Object.values(contact)
+          .join(" ")
+          .toLowerCase()
+          .includes(search.toLowerCase());
+      });
+      setSearchResult(newSearchResult);
+    }
+  };
+  console.log("parent rendered");
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Routes>
+        <Route path="/" element={<Header />}>
+          <Route
+            index
+            element={
+              <ContactList
+                contacts={search ? searchResult : contacts}
+                handleRemoveContact={RemoveContact}
+                search={search}
+                handleSearch={handleSearch}
+              />
+            }
+          />
+          <Route
+            path="/addcontact"
+            element={
+              <AddContact
+                handleAddContact={handleAddContact}
+                handleEditContact={editContact}
+              />
+            }
+          />
+          <Route
+            path="/editcontact/:id"
+            element={
+              <AddContact
+                handleAddContact={handleAddContact}
+                handleEditContact={editContact}
+              />
+            }
+          />
+          <Route path="/contactdetail/:id" element={<ContactsDetail />} />
+          <Route
+            path="/deletecontact/:id"
+            element={<DeleteContact handleRemoveContact={RemoveContact} />}
+          />
+        </Route>
+      </Routes>
     </div>
   );
 }
